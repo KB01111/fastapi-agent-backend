@@ -1,0 +1,69 @@
+# Simplified Docker Compose for Coolify deployment
+# FastAPI Agent Backend (Basic Version)
+
+services:
+  # Main FastAPI Application
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    environment:
+      # Coolify Magic Variables - generates FQDN automatically
+      - SERVICE_FQDN_BACKEND
+      
+      # API Configuration with sensible defaults
+      - DEBUG=${DEBUG:-false}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - HOST=0.0.0.0
+      - PORT=8000
+      
+      # Authentication (Clerk) - Will appear in Coolify UI for editing
+      - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
+      - CLERK_PUBLISHABLE_KEY=${CLERK_PUBLISHABLE_KEY}
+      - JWT_ALGORITHM=${JWT_ALGORITHM:-RS256}
+      
+      # Database (Supabase) - External managed service
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - DATABASE_URL=${DATABASE_URL}
+      
+      # AI Configuration - Will appear in Coolify UI for editing
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      
+      # CORS Configuration - Uses Coolify-generated domain
+      - CORS_ORIGINS=${CORS_ORIGINS:-["$SERVICE_FQDN_BACKEND"]}
+      
+      # Performance Configuration
+      - GUNICORN_WORKERS=${GUNICORN_WORKERS:-2}
+      
+    volumes:
+      # Application logs directory (auto-created by Coolify)
+      - type: bind
+        source: ./logs
+        target: /app/logs
+        is_directory: true
+        
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+      
+    restart: unless-stopped
+    
+    # Coolify Labels for Traefik routing and TLS
+    labels:
+      - coolify.managed=true
+      - traefik.enable=true
+      - "traefik.http.routers.backend.rule=Host(`$SERVICE_FQDN_BACKEND`)"
+      - traefik.http.routers.backend.entrypoints=websecure
+      - traefik.http.routers.backend.tls.certresolver=letsencrypt
+      - traefik.http.services.backend.loadbalancer.server.port=8000
+      
+      # Additional routing for specific endpoints
+      - traefik.http.routers.backend-health.rule=Host(`$SERVICE_FQDN_BACKEND`) && Path(`/v1/health`)
+      - traefik.http.routers.backend-health.entrypoints=web 

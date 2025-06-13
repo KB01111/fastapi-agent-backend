@@ -1,0 +1,85 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Monitoring and Observability
+
+The monitoring system is implemented in [app/monitoring.py](mdc:app/monitoring.py) providing comprehensive metrics, logging, and performance tracking.
+
+## Prometheus Metrics
+
+### HTTP Request Metrics
+- `http_requests_total` - Counter with labels: method, endpoint, status_code
+- `http_request_duration_seconds` - Histogram with labels: method, endpoint
+
+### Agent Execution Metrics
+- `agent_executions_total` - Counter with labels: agent_type, status
+- `agent_execution_duration_seconds` - Histogram with labels: agent_type
+- `agent_token_usage_total` - Counter with labels: agent_type, token_type
+
+### System Metrics
+- `active_sessions_total` - Gauge for active agent sessions
+- `database_connections_total` - Gauge for DB connection pool
+- `system_memory_usage_bytes` - Gauge for memory usage
+
+## Structured Logging
+
+Configured with JSON output for production:
+- **Request/Response Tracing**: Unique request IDs and user context
+- **Performance Logging**: Execution times and resource usage
+- **Error Tracking**: Structured error context with stack traces
+- **Agent Metrics**: Detailed logging of agent execution steps
+
+## Middleware Integration
+
+### RequestMetricsMiddleware
+Implemented in [app/monitoring.py](mdc:app/monitoring.py) and integrated in [app/main.py](mdc:app/main.py):
+- Automatic HTTP request metrics collection
+- Response time measurement
+- Error rate tracking
+- Endpoint pattern extraction
+
+## MetricsCollector Class
+
+Provides high-level metric recording methods:
+- `record_http_request()` - HTTP request/response metrics
+- `record_agent_execution()` - Agent performance and success rates
+- `update_active_sessions()` - Session count management
+- `update_database_connections()` - Connection pool monitoring
+
+## Performance Monitoring
+
+### Execution Time Decorator
+```python
+@monitor_execution_time("custom_metric_name")
+async def function_to_monitor():
+    # Function implementation
+```
+
+### Performance Targets
+- **P95 Latency**: ≤200ms target for agent endpoints
+- **Error Rate**: <5% threshold for all endpoints
+- **Throughput**: 20 RPS sustained load capability
+
+## Metrics Endpoint
+
+Prometheus metrics exposed at `/metrics` with access restrictions configured in [Caddyfile](mdc:Caddyfile):
+- IP whitelist for metrics access
+- Internal network access only
+- Integration with Prometheus server
+
+## Grafana Integration
+
+Metrics visualization configured in [docker-compose.yml](mdc:docker-compose.yml):
+- Prometheus data source configuration
+- Custom dashboards for agent performance
+- Alerting rules for performance thresholds
+
+## Load Testing
+
+Performance validation implemented in [tests/load-test.js](mdc:tests/load-test.js):
+- k6-based load testing targeting 20 RPS
+- P95 latency validation (<200ms)
+- Error rate monitoring (<5%)
+- Agent-specific performance testing

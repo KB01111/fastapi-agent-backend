@@ -1,0 +1,76 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Database Models and Schema
+
+The database layer is implemented in [app/database.py](mdc:app/database.py) using SQLAlchemy with async support and Supabase as the backend.
+
+## Database Models
+
+### AgentSession
+Stores conversation sessions for users:
+```python
+- id: String(255) - Primary key
+- user_id: String(255) - Clerk user identifier (indexed)
+- session_name: String(255) - Optional session name
+- created_at: DateTime - Session creation timestamp
+- updated_at: DateTime - Last update timestamp
+- is_active: Boolean - Session status
+- metadata: JSON - Additional session data
+```
+
+### AgentMessage
+Individual messages within sessions:
+```python
+- id: String(255) - Primary key
+- session_id: String(255) - Foreign key to AgentSession (indexed)
+- user_id: String(255) - Clerk user identifier (indexed)
+- message_type: String(50) - 'user', 'assistant', 'system'
+- content: Text - Message content
+- created_at: DateTime - Message timestamp
+- metadata: JSON - Message metadata
+- token_count: Integer - Token usage for this message
+```
+
+### AgentExecution
+Execution logs and metrics:
+```python
+- id: String(255) - Primary key
+- session_id: String(255) - Related session (indexed)
+- user_id: String(255) - User identifier (indexed)
+- agent_type: String(50) - Agent used ('praisonai', 'crewai', 'ag2')
+- task: Text - Task description
+- status: String(50) - 'pending', 'running', 'completed', 'failed'
+- result: Text - Execution result
+- error_message: Text - Error details if failed
+- execution_time_ms: Integer - Performance metrics
+- token_usage: JSON - Token consumption data
+- created_at: DateTime - Start time
+- completed_at: DateTime - End time
+- metadata: JSON - Additional execution data
+```
+
+## Database Manager
+
+The `DatabaseManager` class provides high-level operations:
+- `create_session()` - Create new conversation session
+- `save_message()` - Store message with metadata
+- `save_execution()` - Record agent execution with metrics
+
+## Connection Configuration
+
+Database connection is configured via environment variables in [app/config.py](mdc:app/config.py):
+- `DATABASE_URL` - PostgreSQL connection string for SQLAlchemy
+- `SUPABASE_URL` - Supabase project URL
+- `SUPABASE_ANON_KEY` - Public API key
+- `SUPABASE_SERVICE_ROLE_KEY` - Admin API key
+
+## Usage in API
+
+The database is used throughout [app/api/v1/agent.py](mdc:app/api/v1/agent.py) to:
+1. Create/retrieve sessions before agent execution
+2. Save user messages and agent responses
+3. Record execution metrics for monitoring
+4. Maintain conversation history for context

@@ -1,0 +1,96 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Deployment and Infrastructure
+
+The application is designed for production deployment using Docker containers with comprehensive infrastructure automation.
+
+## Docker Configuration
+
+### Multi-stage Build
+[Dockerfile](mdc:Dockerfile) implements a multi-stage build:
+- **Builder Stage**: Compiles dependencies with build tools
+- **Production Stage**: Minimal runtime image with security hardening
+- **Non-root User**: Runs as `appuser` for security
+- **Health Checks**: Built-in health monitoring
+
+### Production Server
+[gunicorn.conf.py](mdc:gunicorn.conf.py) configures the WSGI server:
+- **Worker Process**: Uvicorn workers for async support
+- **Auto-scaling**: CPU-based worker count calculation
+- **Timeouts**: Configured for AI agent execution times
+- **Logging**: Structured logging with request tracing
+
+## Container Orchestration
+
+[docker-compose.yml](mdc:docker-compose.yml) defines the complete stack:
+
+### Core Services
+- **Backend**: FastAPI application from [app/main.py](mdc:app/main.py)
+- **Caddy**: Reverse proxy with automatic HTTPS
+- **Prometheus**: Metrics collection and storage
+- **Grafana**: Metrics visualization and alerting
+
+### Infrastructure Services
+- **Watchtower**: Automatic container updates
+- **Health Checks**: Service monitoring and restart policies
+- **Volume Management**: Persistent data storage
+
+## Reverse Proxy Configuration
+
+[Caddyfile](mdc:Caddyfile) provides enterprise-grade reverse proxy:
+- **Automatic HTTPS**: Certificate management with Let's Encrypt
+- **Security Headers**: HSTS, CSP, and anti-XSS protection
+- **Rate Limiting**: Configurable request throttling
+- **Load Balancing**: Round-robin for multiple backend instances
+- **Access Control**: IP whitelisting for sensitive endpoints
+
+## Environment Configuration
+
+Environment variables are defined in [env.example](mdc:env.example):
+
+### Required Variables
+- **Authentication**: Clerk API keys and configuration
+- **Database**: Supabase connection strings and API keys
+- **AI Services**: OpenAI, Anthropic API keys
+- **Security**: CORS origins and JWT settings
+
+### Production Settings
+- **Worker Count**: Gunicorn worker scaling
+- **Log Levels**: Production logging configuration
+- **Performance**: Connection pooling and timeout settings
+
+## Monitoring Infrastructure
+
+### Prometheus Configuration
+[prometheus.yml](mdc:prometheus.yml) defines scraping targets:
+- FastAPI application metrics from [app/monitoring.py](mdc:app/monitoring.py)
+- Caddy proxy metrics
+- System-level monitoring endpoints
+
+### Grafana Setup
+- Pre-configured dashboards for agent performance
+- Alerting rules for SLA monitoring
+- Data source integration with Prometheus
+
+## VPS Deployment
+
+Production deployment targets Ubuntu 22.04 VPS:
+- **Firewall Configuration**: UFW rules for ports 22, 80, 443
+- **Docker Installation**: Official Docker Engine setup
+- **Security Hardening**: Non-root containers and network isolation
+- **Automatic Updates**: Watchtower for container lifecycle management
+
+## Performance Optimization
+
+### Resource Allocation
+- **Memory Limits**: Container resource constraints
+- **CPU Scaling**: Worker process optimization
+- **Connection Pooling**: Database connection management from [app/database.py](mdc:app/database.py)
+
+### Caching Strategy
+- **HTTP Caching**: Appropriate cache headers
+- **Static Assets**: Efficient serving through Caddy
+- **Database Optimization**: Query optimization and indexing

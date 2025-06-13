@@ -1,0 +1,49 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# FastAPI Agent Backend Project Overview
+
+This is a production-ready FastAPI backend that orchestrates multiple AI agents (PraisonAI, CrewAI, and AG2/AutoGen) with secure authentication, database persistence, and comprehensive monitoring.
+
+## Core Architecture
+
+The application follows a modular FastAPI structure with the main entry point at [app/main.py](mdc:app/main.py), which configures all middleware, CORS, and routing.
+
+### Key Components
+
+- **Main Application**: [app/main.py](mdc:app/main.py) - FastAPI app with middleware and route configuration
+- **Configuration**: [app/config.py](mdc:app/config.py) - Pydantic settings for environment variables
+- **Authentication**: [app/auth.py](mdc:app/auth.py) - Clerk JWT verification and user management
+- **Database**: [app/database.py](mdc:app/database.py) - Supabase integration with SQLAlchemy models
+- **AI Agents**: [app/agents.py](mdc:app/agents.py) - Multi-agent orchestration system
+- **Monitoring**: [app/monitoring.py](mdc:app/monitoring.py) - Prometheus metrics and structured logging
+
+### API Structure
+
+The API is organized under `/v1` with the main endpoint at [app/api/v1/agent.py](mdc:app/api/v1/agent.py):
+- `POST /v1/answer` - Main agent execution endpoint
+- `POST /v1/sessions` - Session management
+- `GET /v1/agents` - Available agent information
+- `GET /v1/health` - Health check
+
+## Deployment
+
+- **Docker**: Multi-stage build defined in [Dockerfile](mdc:Dockerfile)
+- **Orchestration**: [docker-compose.yml](mdc:docker-compose.yml) with Caddy, Prometheus, Grafana
+- **Reverse Proxy**: [Caddyfile](mdc:Caddyfile) for TLS termination and security
+- **Server Config**: [gunicorn.conf.py](mdc:gunicorn.conf.py) for production WSGI settings
+
+## Dependencies
+
+All Python dependencies are defined in [requirements.txt](mdc:requirements.txt), including AI frameworks (praisonai, crewai, autogen) and FastAPI ecosystem packages.
+
+## Testing
+
+- **Unit Tests**: [tests/test_agents.py](mdc:tests/test_agents.py) - Agent functionality testing
+- **Load Testing**: [tests/load-test.js](mdc:tests/load-test.js) - k6 performance validation targeting 20 RPS
+
+## Environment Configuration
+
+Use [env.example](mdc:env.example) as a template for setting up environment variables for Clerk authentication, Supabase database, and AI API keys.

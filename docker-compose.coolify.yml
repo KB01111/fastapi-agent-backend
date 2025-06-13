@@ -1,0 +1,204 @@
+# Docker Compose configuration optimized for Coolify deployment
+# FastAPI Agent Backend with AI Orchestration
+
+services:
+  # Main FastAPI Application
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    environment:
+      # Coolify Magic Variables for FQDN generation
+      - SERVICE_FQDN_BACKEND
+      
+      # API Configuration  
+      - DEBUG=${DEBUG:-false}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - HOST=0.0.0.0
+      - PORT=8000
+      
+      # Authentication (Clerk) - Editable in Coolify UI
+      - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
+      - CLERK_PUBLISHABLE_KEY=${CLERK_PUBLISHABLE_KEY}
+      - JWT_ALGORITHM=${JWT_ALGORITHM:-RS256}
+      
+      # Database (Supabase) - External service
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - DATABASE_URL=${DATABASE_URL}
+      
+      # AI Configuration - Editable in Coolify UI
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      
+      # CORS Configuration - Use Coolify-generated FQDN
+      - CORS_ORIGINS=${CORS_ORIGINS:-["$SERVICE_FQDN_BACKEND"]}
+      
+      # Performance Configuration
+      - GUNICORN_WORKERS=${GUNICORN_WORKERS:-4}
+      - PROMETHEUS_PORT=${PROMETHEUS_PORT:-8001}
+      
+    volumes:
+      # Logs directory with auto-creation
+      - type: bind
+        source: ./logs
+        target: /app/logs
+        is_directory: true
+        
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+      
+    restart: unless-stopped
+    
+    # Coolify Labels for proper routing
+    labels:
+      - coolify.managed=true
+      - traefik.enable=true
+      - "traefik.http.routers.backend.rule=Host(`$SERVICE_FQDN_BACKEND`)"
+      - traefik.http.routers.backend.entrypoints=websecure
+      - traefik.http.routers.backend.tls.certresolver=letsencrypt
+      - traefik.http.services.backend.loadbalancer.server.port=8000
+      
+      # Health check endpoint
+      - traefik.http.routers.backend-health.rule=Host(`$SERVICE_FQDN_BACKEND`) && Path(`/v1/health`)
+      - traefik.http.routers.backend-health.entrypoints=web
+      
+      # Metrics endpoint with path prefix (secured)
+      - traefik.http.routers.backend-metrics.rule=Host(`$SERVICE_FQDN_BACKEND`) && PathPrefix(`/metrics`)
+      - traefik.http.routers.backend-metrics.entrypoints=websecure
+      - traefik.http.routers.backend-metrics.tls.certresolver=letsencrypt
+      # IP whitelist middleware for metrics (configure in Coolify)
+      - traefik.http.routers.backend-metrics.middlewares=metrics-whitelist@file
+
+  # Prometheus for metrics collection
+  prometheus:
+    image: prom/prometheus:latest
+    environment:
+      # Internal service, no external access needed
+      - SERVICE_FQDN_PROMETHEUS_9090=/metrics-internal
+      
+    volumes:
+      # Prometheus configuration
+      - type: bind
+        source: ./prometheus.yml
+        target: /etc/prometheus/prometheus.yml
+        content: |
+          global:
+            scrape_interval: 15s
+            evaluation_interval: 15s
+
+          scrape_configs:
+            - job_name: 'fastapi-backend'
+              static_configs:
+                - targets: ['backend:8000']
+              metrics_path: '/metrics'
+              scrape_interval: 10s
+              
+            - job_name: 'prometheus'
+              static_configs:
+                - targets: ['localhost:9090']
+                
+      # Prometheus data storage
+      - prometheus_data:/prometheus
+      
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=15d'
+      - '--web.enable-lifecycle'
+      - '--web.external-url=http://$SERVICE_FQDN_PROMETHEUS'
+      
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      
+    restart: unless-stopped
+    
+    labels:
+      - coolify.managed=true
+      - traefik.enable=true
+      - "traefik.http.routers.prometheus.rule=Host(`$SERVICE_FQDN_PROMETHEUS`)"
+      - traefik.http.routers.prometheus.entrypoints=websecure
+      - traefik.http.routers.prometheus.tls.certresolver=letsencrypt
+      - traefik.http.services.prometheus.loadbalancer.server.port=9090
+      # Secure prometheus with basic auth (configure in Coolify)
+      - traefik.http.routers.prometheus.middlewares=prometheus-auth@file
+
+  # Grafana for metrics visualization
+  grafana:
+    image: grafana/grafana:latest
+    environment:
+      # Coolify Magic Variables
+      - SERVICE_FQDN_GRAFANA_3000
+      
+      # Grafana Configuration
+      - GF_SECURITY_ADMIN_PASSWORD=${SERVICE_PASSWORD_GRAFANA_ADMIN}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=$SERVICE_FQDN_GRAFANA
+      - GF_SERVER_SERVE_FROM_SUB_PATH=false
+      - GF_DATABASE_TYPE=sqlite3
+      - GF_DATABASE_PATH=/var/lib/grafana/grafana.db
+      - GF_SESSION_PROVIDER=file
+      - GF_SESSION_PROVIDER_CONFIG=/var/lib/grafana/sessions
+      
+    volumes:
+      # Grafana data persistence
+      - grafana_data:/var/lib/grafana
+      
+      # Grafana provisioning configuration
+      - type: bind
+        source: ./grafana/provisioning/datasources/prometheus.yml
+        target: /etc/grafana/provisioning/datasources/prometheus.yml
+        content: |
+          apiVersion: 1
+          datasources:
+            - name: Prometheus
+              type: prometheus
+              access: proxy
+              url: http://prometheus:9090
+              isDefault: true
+              editable: true
+              
+      - type: bind
+        source: ./grafana/provisioning/dashboards
+        target: /etc/grafana/provisioning/dashboards
+        is_directory: true
+        
+    depends_on:
+      - prometheus
+      
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      
+    restart: unless-stopped
+    
+    labels:
+      - coolify.managed=true
+      - traefik.enable=true
+      - "traefik.http.routers.grafana.rule=Host(`$SERVICE_FQDN_GRAFANA`)"
+      - traefik.http.routers.grafana.entrypoints=websecure
+      - traefik.http.routers.grafana.tls.certresolver=letsencrypt
+      - traefik.http.services.grafana.loadbalancer.server.port=3000
+
+# Named volumes for data persistence
+volumes:
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+# Networks are automatically handled by Coolify
+# Coolify creates and manages networks automatically 

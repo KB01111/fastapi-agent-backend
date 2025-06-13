@@ -1,0 +1,60 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# AI Agent Orchestration System
+
+The core AI functionality is implemented in [app/agents.py](mdc:app/agents.py) with a pluggable architecture supporting multiple agent frameworks.
+
+## Agent Types Supported
+
+1. **PraisonAI** (`praisonai`) - Orchestrator with AG2 and CrewAI adapters
+2. **CrewAI** (`crewai`) - Multi-agent collaboration system  
+3. **AG2/AutoGen** (`ag2`) - Conversation-based agents
+
+## Architecture Pattern
+
+### Base Agent Class
+All agents inherit from `BaseAgent` which defines the standard interface:
+- `execute(task, context)` - Main execution method returning `AgentResponse`
+- `_measure_execution_time()` - Performance tracking helper
+
+### Agent Response Format
+```python
+@dataclass
+class AgentResponse:
+    success: bool
+    result: Optional[str] = None
+    error: Optional[str] = None
+    execution_time_ms: Optional[int] = None
+    token_usage: Optional[Dict[str, Any]] = None
+    metadata: Optional[Dict[str, Any]] = None
+```
+
+### Orchestrator
+The `AgentOrchestrator` class manages all agents and provides:
+- Dynamic agent initialization with graceful failure handling
+- Agent type validation and routing
+- Unified execution interface
+
+## Configuration
+
+Agents are configured via environment variables in [app/config.py](mdc:app/config.py):
+- `OPENAI_API_KEY` - For OpenAI-based agents
+- `ANTHROPIC_API_KEY` - For Anthropic-based agents
+
+## Usage in API
+
+The main API endpoint at [app/api/v1/agent.py](mdc:app/api/v1/agent.py) uses the orchestrator to:
+1. Validate agent type
+2. Execute tasks asynchronously
+3. Save results to database via [app/database.py](mdc:app/database.py)
+4. Record metrics via [app/monitoring.py](mdc:app/monitoring.py)
+
+## Error Handling
+
+Each agent implementation includes:
+- Import error handling for missing dependencies
+- Runtime error handling with proper logging
+- Graceful degradation when agents fail to initialize

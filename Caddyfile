@@ -1,0 +1,100 @@
+# Caddyfile for FastAPI Agent Backend
+# Replace 'your-domain.com' with your actual domain
+
+your-domain.com {
+    # Enable automatic HTTPS
+    tls {
+        protocols tls1.2 tls1.3
+    }
+    
+    # Security headers
+    header {
+        # Enable HSTS
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        # Prevent MIME type sniffing
+        X-Content-Type-Options "nosniff"
+        # Prevent XSS attacks
+        X-XSS-Protection "1; mode=block"
+        # Prevent iframe embedding
+        X-Frame-Options "DENY"
+        # Remove server header
+        -Server
+        # CSP header (adjust as needed)
+        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'"
+    }
+    
+    # Rate limiting (adjust as needed)
+    rate_limit {
+        zone static_ip_10rs {
+            key {remote_host}
+            events 10
+            window 1s
+        }
+        zone static_ip_100rh {
+            key {remote_host}
+            events 100
+            window 1h
+        }
+    }
+    
+    # Main API routes
+    reverse_proxy backend:8000 {
+        # Health check
+        health_uri /v1/health
+        health_interval 30s
+        health_timeout 5s
+        
+        # Load balancing (if multiple backends)
+        lb_policy round_robin
+        
+        # Headers
+        header_up Host {upstream_hostport}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+    
+    # Metrics endpoint (restrict access)
+    @metrics path /metrics
+    handle @metrics {
+        # Add IP whitelist for metrics access
+        @allowed_ips remote_ip 127.0.0.1 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16
+        handle @allowed_ips {
+            reverse_proxy backend:8000
+        }
+        handle {
+            respond "Access denied" 403
+        }
+    }
+    
+    # Logging
+    log {
+        output file /var/log/caddy/access.log
+        format json
+        level INFO
+    }
+    
+    # Error handling
+    handle_errors {
+        respond "{http.error.status_code} {http.error.status_text}"
+    }
+}
+
+# Redirect www to non-www
+www.your-domain.com {
+    redir https://your-domain.com{uri} permanent
+}
+
+# Development/staging subdomain (optional)
+api.your-domain.com {
+    tls {
+        protocols tls1.2 tls1.3
+    }
+    
+    # Same configuration as main domain
+    reverse_proxy backend:8000 {
+        health_uri /v1/health
+        health_interval 30s
+        health_timeout 5s
+    }
+} 

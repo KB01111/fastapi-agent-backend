@@ -1,0 +1,68 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Authentication System
+
+Authentication is handled in [app/auth.py](mdc:app/auth.py) using Clerk JWT tokens with RS256 algorithm verification.
+
+## Clerk Integration
+
+The system integrates with Clerk for user authentication using JWT tokens:
+- **JWKS Endpoint**: Automatically fetches public keys from Clerk's JWKS endpoint
+- **Token Verification**: Validates JWT signatures, expiration, and audience
+- **User Extraction**: Extracts user ID, email, and metadata from verified tokens
+
+## Configuration
+
+Authentication settings are defined in [app/config.py](mdc:app/config.py):
+```python
+- CLERK_SECRET_KEY: Secret key for Clerk API access
+- CLERK_PUBLISHABLE_KEY: Public key for client-side integration
+- JWT_ALGORITHM: Token signing algorithm (default: RS256)
+```
+
+## ClerkUser Class
+
+Represents an authenticated user with:
+```python
+class ClerkUser:
+    user_id: str          # Unique Clerk user identifier
+    email: Optional[str]  # User email address
+    metadata: Dict        # Additional user metadata from Clerk
+```
+
+## FastAPI Dependencies
+
+### Required Authentication
+```python
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> ClerkUser
+```
+Used in endpoints that require authentication like `/v1/answer` in [app/api/v1/agent.py](mdc:app/api/v1/agent.py).
+
+### Optional Authentication
+```python
+async def get_optional_user(credentials: Optional[HTTPAuthorizationCredentials] = Depends(optional_security)) -> Optional[ClerkUser]
+```
+For endpoints that can work with or without authentication.
+
+## JWT Verification Process
+
+1. **Token Extraction**: Extract Bearer token from Authorization header
+2. **JWKS Retrieval**: Fetch signing keys from Clerk's JWKS endpoint
+3. **Signature Validation**: Verify token signature using retrieved public key
+4. **Claims Validation**: Check audience, expiration, and required claims
+5. **User Creation**: Create ClerkUser instance from verified claims
+
+## Error Handling
+
+The authentication system handles various error scenarios:
+- **Expired Tokens**: Returns 401 with "Token has expired" message
+- **Invalid Signatures**: Returns 401 with "Invalid token" message
+- **Missing Claims**: Returns 401 with "Invalid token: missing user ID"
+- **Network Errors**: Logs errors and returns generic authentication failure
+
+## Usage in API Endpoints
+
+All protected endpoints in [app/api/v1/agent.py](mdc:app/api/v1/agent.py) use the `get_current_user` dependency to ensure requests are authenticated before processing.
