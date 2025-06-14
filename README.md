@@ -12,6 +12,11 @@ A production-ready FastAPI backend that orchestrates multiple AI agents with sec
 - **☁️ Coolify Deployment**: Pre-configured for seamless Coolify deployment
 - **⚡ High Performance**: Async operations with connection pooling and health checks
 - **🧪 Testing**: Unit tests and k6 load testing (targeting 20 RPS)
+- **🧠 MindsDB Integration**: Connect to MindsDB for machine learning capabilities
+- **📧 Gmail Integration**: Send emails and access Gmail data through Google API
+- **⚙️ Admin Control Panel**: Streamlit-based UI for easy configuration and setup
+- **🖥️ Tauri Integration**: Connect to Tauri desktop applications with secure CORS configuration
+- **🔌 Enhanced Supabase Connection**: Direct connection and connection pooling for better performance
 
 ## 🏗️ Architecture
 
@@ -21,6 +26,8 @@ Internet → Traefik (HTTPS) → FastAPI Backend → AI Agents (PraisonAI/CrewAI
                                Supabase Database
                                     ↓
                             Prometheus → Grafana
+                                    ↕
+                          MindsDB ← → Gmail API
 ```
 
 ### Core Components
@@ -30,6 +37,8 @@ Internet → Traefik (HTTPS) → FastAPI Backend → AI Agents (PraisonAI/CrewAI
 - **Authentication Layer** (`app/auth.py`) - Clerk JWT verification and user management
 - **Database Layer** (`app/database.py`) - Async SQLAlchemy with Supabase backend
 - **Monitoring System** (`app/monitoring.py`) - Prometheus metrics and structured logging
+- **MindsDB Integration** (`app/integrations/mindsdb.py`) - Machine learning capabilities
+- **Gmail Integration** (`app/integrations/gmail.py`) - Email and Gmail data access
 
 ## 🎯 API Endpoints
 
@@ -204,6 +213,8 @@ The repository is configured for:
 - [API Documentation](http://localhost:8000/docs) - Interactive API docs (when running)
 - [Architecture Overview](.cursor/rules/project-overview.mdc) - Detailed system architecture
 - [Agent System](.cursor/rules/agent-system.mdc) - AI agent implementation details
+- [Supabase Connection Status](SUPABASE_CONNECTION_STATUS.md) - Guide for connecting to Supabase
+- [Tauri Integration](TAURI_INTEGRATION.md) - Guide for connecting to Tauri desktop apps
 
 ## 🤝 Contributing
 
@@ -225,6 +236,40 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
+## ⚙️ Admin Control Panel
+
+The FastAPI Agent Backend includes a Streamlit-based admin control panel that allows you to configure the application through a user-friendly interface.
+
+### Running the Admin Panel
+
+1. **Install the required dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. **Run the admin panel** using one of these methods:
+
+   **Option 1: Using the startup script (recommended)**:
+   ```bash
+   python admin/run_admin_panel.py
+   ```
+
+   **Option 2: Using Streamlit directly**:
+   ```bash
+   streamlit run admin/app.py
+   ```
+
+3. **Access the admin panel** in your web browser (typically at http://localhost:8501)
+
+### Features of the Admin Panel
+
+- Configure all application settings through a user-friendly UI
+- Organized into logical sections for easy navigation
+- Changes are saved directly to your `.env` file
+- Secure handling of sensitive information like API keys and passwords
+
+For more details, see the [Admin Panel Documentation](admin/README.md).
+
 ## 🎉 Quick Start Summary
 
 1. **Clone this repository**
@@ -232,7 +277,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 3. **Choose deployment method**:
    - **Coolify**: Use `docker-compose.coolify-simple.yml` 
    - **Traditional**: Use `docker-compose.yml`
-4. **Configure environment variables**
-5. **Deploy and enjoy your AI agent backend!**
+4. **Configure environment variables** (using the Admin Control Panel or manually)
+5. **Set up integrations** (if needed):
+   - **Tauri Desktop App**: Configure CORS and Tauri-specific settings
+   - **Remote Supabase**: Configure enhanced connection options
+6. **Deploy and enjoy your AI agent backend!**
 
 Your FastAPI Agent Backend will be live with automatic HTTPS, monitoring, and enterprise-grade security! 🚀 

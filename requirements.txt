@@ -37,10 +37,13 @@ pydantic==2.5.0
 pydantic-settings==2.1.0
 python-dotenv==1.0.0
 
+# Admin Panel
+streamlit==1.32.0
+
 # Development & Testing
 pytest==7.4.3
 pytest-asyncio==0.21.1
 pytest-cov==4.1.0
 
 # Utilities
-python-multipart==0.0.6 
+python-multipart==0.0.6

@@ -28,26 +28,34 @@ git push
 
 2. **Configure Environment Variables**:
    Coolify will automatically detect these variables from your compose file:
-   
+
    ```bash
    # Authentication (Required)
    CLERK_SECRET_KEY=your_clerk_secret_key
    CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
-   
+
    # Database (Required)
    SUPABASE_URL=https://your-project.supabase.co
    SUPABASE_ANON_KEY=your_supabase_anon_key
    SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
    DATABASE_URL=postgresql+asyncpg://user:pass@host:5432/dbname
-   
+
+   # Enhanced Supabase Connection (Recommended for production)
+   SUPABASE_DIRECT_URL=postgresql://user:pass@host:5432/dbname
+   SUPABASE_CONNECTION_POOLING=true
+
    # AI Services (Required)
    OPENAI_API_KEY=your_openai_api_key
    ANTHROPIC_API_KEY=your_anthropic_api_key
-   
+
    # Optional Configuration
    DEBUG=false
    LOG_LEVEL=info
    GUNICORN_WORKERS=2
+
+   # Tauri Desktop App Integration (Optional)
+   TAURI_ENABLED=false
+   TAURI_ALLOWED_ORIGINS=["tauri://localhost","tauri://*"]
    ```
 
 3. **Deploy**:
@@ -120,6 +128,50 @@ labels:
   - traefik.http.routers.backend.entrypoints=websecure
   - traefik.http.routers.backend.tls.certresolver=letsencrypt
 ```
+
+## 🔌 **Enhanced Supabase Connection Options**
+
+For better performance and reliability with Supabase, especially in production environments:
+
+1. **Direct Connection URL**:
+   ```bash
+   # Bypasses the Supabase API for direct PostgreSQL access
+   SUPABASE_DIRECT_URL=postgresql://postgres:password@your-project.supabase.co:5432/postgres
+   ```
+
+2. **Connection Pooling**:
+   ```bash
+   # Improves performance by reusing database connections
+   SUPABASE_CONNECTION_POOLING=true
+   ```
+
+3. **Benefits**:
+   - Reduced latency for database operations
+   - Better handling of concurrent requests
+   - More stable connections for production workloads
+   - Improved performance under high load
+
+## 🖥️ **Tauri Desktop App Integration**
+
+If you're building a desktop application with Tauri that needs to connect to your FastAPI backend:
+
+1. **Enable Tauri Integration**:
+   ```bash
+   # In your .env file or Coolify environment variables
+   TAURI_ENABLED=true
+   TAURI_ALLOWED_ORIGINS=["tauri://localhost","tauri://*"]
+   ```
+
+2. **Configure CORS for Tauri**:
+   ```bash
+   # Make sure Tauri origins are included in CORS_ORIGINS
+   CORS_ORIGINS=["https://your-domain.com","tauri://localhost","tauri://*"]
+   ```
+
+3. **In Your Tauri Application**:
+   - Configure your Tauri app to connect to your Coolify-deployed backend
+   - Use the generated Coolify FQDN in your Tauri app configuration
+   - See [TAURI_INTEGRATION.md](TAURI_INTEGRATION.md) for detailed instructions
 
 ## 📋 **Pre-Deployment Checklist**
 

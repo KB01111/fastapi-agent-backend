@@ -64,6 +64,7 @@ Your FastAPI backend is **fully prepared** to connect to Supabase. Here's what y
 
 4. Navigate to **Settings → Database**  
 5. Copy the connection string (use the async format)
+6. For enhanced performance, also copy the direct connection string
 
 ### Step 2: Update Your `.env` File
 
@@ -75,6 +76,10 @@ SUPABASE_URL=https://abcdefghijk.supabase.co
 SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFiY2RlZmdoaWprIiwicm9sZSI6ImFub24iLCJpYXQiOjE2...
 SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFiY2RlZmdoaWprIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTY...
 DATABASE_URL=postgresql+asyncpg://postgres:your-password@db.abcdefghijk.supabase.co:5432/postgres
+
+# Enhanced connection options (recommended for production)
+SUPABASE_DIRECT_URL=postgresql://postgres:your-password@abcdefghijk.supabase.co:5432/postgres
+SUPABASE_CONNECTION_POOLING=true
 ```
 
 ### Step 3: Test Connection
@@ -186,6 +191,23 @@ curl -X POST http://localhost:8000/v1/answer \
 2. **Set up Clerk Authentication**: Configure real Clerk credentials  
 3. **Deploy to Production**: Use Docker Compose for full deployment
 4. **Add Missing AI Frameworks**: Resolve dependency conflicts for PraisonAI, CrewAI, AG2
+5. **Configure Tauri Integration**: Set up CORS and Tauri-specific settings for desktop app integration
+
+### Enhanced Supabase Connection Options
+
+For better performance and reliability, especially in production environments, we've added enhanced connection options:
+
+1. **Direct Connection URL**: Bypasses the Supabase API for direct PostgreSQL access
+   ```
+   SUPABASE_DIRECT_URL=postgresql://postgres:your-password@abcdefghijk.supabase.co:5432/postgres
+   ```
+
+2. **Connection Pooling**: Improves performance by reusing database connections
+   ```
+   SUPABASE_CONNECTION_POOLING=true
+   ```
+
+These options can be configured in your `.env` file or through the Admin Panel.
 
 ## 📊 **Overall Progress: 85% Complete**
 
