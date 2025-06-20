@@ -1,0 +1,17 @@
+# Heavy AI Frameworks - Install separately if needed
+# These packages significantly increase Docker build time (30+ minutes)
+# Only install if you specifically need these frameworks
+
+# PraisonAI - Multi-agent orchestration
+praisonaiagents>=0.0.70
+
+# CrewAI - Collaborative AI agents  
+crewai>=0.70.0
+
+# AutoGen/AG2 - Conversation-based multi-agent system
+pyautogen>=0.2.30
+
+# Installation instructions:
+# 1. For development: pip install -r requirements-ai-frameworks.txt
+# 2. For Docker: Add to Dockerfile if needed
+# 3. For production: Consider using pre-built images with these frameworks

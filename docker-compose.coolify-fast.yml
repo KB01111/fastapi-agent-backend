@@ -1,0 +1,85 @@
+# FAST BUILD Docker Compose for Coolify - Optimized for Speed
+# Build time: ~2-5 minutes instead of 3+ hours
+# Use this for quick deployments without heavy AI frameworks
+
+services:
+  # Main FastAPI Application - FAST BUILD VERSION
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+      args:
+        - DEBIAN_FRONTEND=noninteractive
+        - PIP_NO_CACHE_DIR=1
+        - PIP_DISABLE_PIP_VERSION_CHECK=1
+    
+    environment:
+      # Coolify Magic Variables
+      - SERVICE_FQDN_BACKEND
+
+      # API Configuration  
+      - DEBUG=${DEBUG:-false}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - HOST=0.0.0.0
+      - PORT=8000
+
+      # Authentication (Required)
+      - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
+      - CLERK_PUBLISHABLE_KEY=${CLERK_PUBLISHABLE_KEY}
+      - JWT_ALGORITHM=${JWT_ALGORITHM:-RS256}
+
+      # Database (Required) 
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - DATABASE_URL=${DATABASE_URL}
+      - SUPABASE_DIRECT_URL=${SUPABASE_DIRECT_URL}
+      - SUPABASE_CONNECTION_POOLING=${SUPABASE_CONNECTION_POOLING:-true}
+
+      # AI Configuration (Required)
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+
+      # CORS Configuration
+      - CORS_ORIGINS=${CORS_ORIGINS:-["$SERVICE_FQDN_BACKEND"]}
+
+      # Performance Configuration
+      - GUNICORN_WORKERS=${GUNICORN_WORKERS:-2}
+
+      # AI Framework Configuration (Disabled for fast builds)
+      - AI_FRAMEWORKS_ENABLED=${AI_FRAMEWORKS_ENABLED:-false}
+      - PRAISONAI_ENABLED=${PRAISONAI_ENABLED:-false}
+      - CREWAI_ENABLED=${CREWAI_ENABLED:-false}
+      - AUTOGEN_ENABLED=${AUTOGEN_ENABLED:-false}
+
+    volumes:
+      # Logs directory
+      - type: bind
+        source: ./logs
+        target: /app/logs
+        is_directory: true
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    restart: unless-stopped
+
+    # Coolify Labels for proper routing
+    labels:
+      - coolify.managed=true
+      - traefik.enable=true
+      - "traefik.http.routers.backend.rule=Host(`$SERVICE_FQDN_BACKEND`)"
+      - traefik.http.routers.backend.entrypoints=websecure
+      - traefik.http.routers.backend.tls.certresolver=letsencrypt
+      - traefik.http.services.backend.loadbalancer.server.port=8000
+
+      # Health check endpoint
+      - traefik.http.routers.backend-health.rule=Host(`$SERVICE_FQDN_BACKEND`) && Path(`/v1/health`)
+      - traefik.http.routers.backend-health.entrypoints=web
+
+# Networks are automatically handled by Coolify

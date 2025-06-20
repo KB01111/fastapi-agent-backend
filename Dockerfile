@@ -1,14 +1,17 @@
-# Multi-stage Docker build for FastAPI Agent Backend
+# Multi-stage Docker build for FastAPI Agent Backend - OPTIMIZED
 FROM python:3.11-slim AS builder
 
-# Set build arguments
+# Set build arguments for faster builds
 ARG DEBIAN_FRONTEND=noninteractive
+ARG PIP_NO_CACHE_DIR=1
+ARG PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# Install system dependencies
+# Install system dependencies (minimal set)
 RUN apt-get update && apt-get install -y \
     build-essential \
     gcc \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
 
 # Create and set working directory
 WORKDIR /app
@@ -16,9 +19,9 @@ WORKDIR /app
 # Copy requirements first for better caching
 COPY requirements.txt .
 
-# Install Python dependencies
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+# Install Python dependencies with optimizations
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
+    pip install --no-cache-dir --compile -r requirements.txt
 
 # Production stage
 FROM python:3.11-slim AS production
