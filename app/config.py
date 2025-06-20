@@ -1,7 +1,7 @@
 """Application configuration using Pydantic settings."""
 
 from typing import Optional, List
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -50,11 +50,25 @@ class Settings(BaseSettings):
     gmail_client_secret: Optional[str] = Field(default=None, env="GMAIL_CLIENT_SECRET")
     gmail_refresh_token: Optional[str] = Field(default=None, env="GMAIL_REFRESH_TOKEN")
 
-    # CORS Configuration
+    # CORS Configuration - More robust parsing
     cors_origins: List[str] = Field(
         default=["http://localhost:3000", "http://localhost:19006", "tauri://localhost", "tauri://*"],
-        env="CORS_ORIGINS"
+        env="CORS_ORIGINS",
+        description="CORS origins as JSON array string, e.g., '[\"*\"]' or '[\"https://example.com\"]'"
     )
+
+    @field_validator('cors_origins', mode='before')
+    @classmethod
+    def parse_cors_origins(cls, v):
+        """Parse CORS origins from string or list."""
+        if isinstance(v, str):
+            try:
+                import json
+                return json.loads(v)
+            except json.JSONDecodeError:
+                # If JSON parsing fails, treat as single origin
+                return [v] if v else ["*"]
+        return v if isinstance(v, list) else ["*"]
 
     # Tauri Configuration
     tauri_enabled: bool = Field(default=False, env="TAURI_ENABLED")

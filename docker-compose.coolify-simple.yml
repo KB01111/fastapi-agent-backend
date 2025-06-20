@@ -49,8 +49,8 @@ services:
       - GMAIL_CLIENT_SECRET=${GMAIL_CLIENT_SECRET}
       - GMAIL_REFRESH_TOKEN=${GMAIL_REFRESH_TOKEN}
 
-      # CORS Configuration - Uses Coolify-generated domain
-      - CORS_ORIGINS=${CORS_ORIGINS:-["$SERVICE_FQDN_BACKEND"]}
+      # CORS Configuration - Fixed JSON format
+      - CORS_ORIGINS=["*"]
 
       # Tauri Configuration - For desktop app integration
       - TAURI_ENABLED=${TAURI_ENABLED:-false}
@@ -86,4 +86,4 @@ services:
 
       # Additional routing for specific endpoints
       - traefik.http.routers.backend-health.rule=Host(`$SERVICE_FQDN_BACKEND`) && Path(`/v1/health`)
-      - traefik.http.routers.backend-health.entrypoints=web 
+      - traefik.http.routers.backend-health.entrypoints=web
