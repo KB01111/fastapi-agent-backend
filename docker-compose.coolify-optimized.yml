@@ -1,24 +1,18 @@
-# FAST BUILD Docker Compose for Coolify - Optimized for Speed
-# Build time: ~2-5 minutes instead of 3+ hours
-# Use this for quick deployments without heavy AI frameworks
+# Coolify-Optimized Docker Compose - FastAPI Agent Backend
+# Build time: 2-5 minutes | Follows Coolify best practices
 
 services:
-  # Main FastAPI Application - FAST BUILD VERSION
   backend:
     build:
       context: .
       dockerfile: Dockerfile
       target: production
-      args:
-        - DEBIAN_FRONTEND=noninteractive
-        - PIP_NO_CACHE_DIR=1
-        - PIP_DISABLE_PIP_VERSION_CHECK=1
-
+    
     environment:
-      # Coolify Magic Variables - Generate FQDN for this service
+      # Coolify Magic Variables - Auto-generates FQDN
       - SERVICE_FQDN_BACKEND
 
-      # API Configuration
+      # API Configuration  
       - DEBUG=${DEBUG:-false}
       - LOG_LEVEL=${LOG_LEVEL:-info}
       - HOST=0.0.0.0
@@ -29,7 +23,7 @@ services:
       - CLERK_PUBLISHABLE_KEY=${CLERK_PUBLISHABLE_KEY}
       - JWT_ALGORITHM=${JWT_ALGORITHM:-RS256}
 
-      # Database (Required)
+      # Database (Required) 
       - SUPABASE_URL=${SUPABASE_URL}
       - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
       - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
@@ -54,7 +48,7 @@ services:
       - AUTOGEN_ENABLED=${AUTOGEN_ENABLED:-false}
 
     volumes:
-      # Logs directory - Coolify will create this automatically
+      # Logs directory - Coolify creates automatically
       - ./logs:/app/logs
 
     healthcheck:
@@ -66,16 +60,13 @@ services:
 
     restart: unless-stopped
 
-    # Coolify Labels for proper routing
+    # Coolify Labels - Automatic routing and HTTPS
     labels:
       - coolify.managed=true
       - traefik.enable=true
-      - "traefik.http.routers.backend.rule=Host(`$SERVICE_FQDN_BACKEND`)"
+      - traefik.http.routers.backend.rule=Host(`$SERVICE_FQDN_BACKEND`)
       - traefik.http.routers.backend.entrypoints=websecure
       - traefik.http.routers.backend.tls.certresolver=letsencrypt
       - traefik.http.services.backend.loadbalancer.server.port=8000
 
-      # Health check endpoint
-      - traefik.http.routers.backend-health.rule=Host(`$SERVICE_FQDN_BACKEND`) && Path(`/v1/health`)
-      - traefik.http.routers.backend-health.entrypoints=web
-# Networks are automatically handled by Coolify
+# Networks are automatically managed by Coolify
