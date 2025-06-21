@@ -74,8 +74,22 @@ class Settings(BaseSettings):
     tauri_enabled: bool = Field(default=False, env="TAURI_ENABLED")
     tauri_allowed_origins: List[str] = Field(
         default=["tauri://localhost", "tauri://*"],
-        env="TAURI_ALLOWED_ORIGINS"
+        env="TAURI_ALLOWED_ORIGINS",
+        description="Tauri allowed origins as JSON array string"
     )
+
+    @field_validator('tauri_allowed_origins', mode='before')
+    @classmethod
+    def parse_tauri_origins(cls, v):
+        """Parse Tauri allowed origins from string or list."""
+        if isinstance(v, str):
+            try:
+                import json
+                return json.loads(v)
+            except json.JSONDecodeError:
+                # If JSON parsing fails, treat as single origin
+                return [v] if v else ["tauri://localhost", "tauri://*"]
+        return v if isinstance(v, list) else ["tauri://localhost", "tauri://*"]
 
     # Observability
     prometheus_port: int = Field(default=8001, env="PROMETHEUS_PORT")

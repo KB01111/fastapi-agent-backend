@@ -54,17 +54,14 @@ services:
 
       # Tauri Configuration - For desktop app integration
       - TAURI_ENABLED=${TAURI_ENABLED:-false}
-      - TAURI_ALLOWED_ORIGINS=${TAURI_ALLOWED_ORIGINS:-["tauri://localhost","tauri://*"]}
+      - TAURI_ALLOWED_ORIGINS=["tauri://localhost","tauri://*"]
 
       # Performance Configuration
       - GUNICORN_WORKERS=${GUNICORN_WORKERS:-2}
 
     volumes:
-      # Application logs directory (auto-created by Coolify)
-      - type: bind
-        source: ./logs
-        target: /app/logs
-        is_directory: true
+      # Logs directory - Coolify creates automatically
+      - ./logs:/app/logs
 
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/v1/health"]
